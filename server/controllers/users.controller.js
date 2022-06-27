@@ -1,9 +1,10 @@
 const mysql = require('mysql')
+const crypto = require('crypto')
 
 const db = mysql.createConnection({
     user: 'root',
     host: 'localhost',
-    password: 'root',
+    password: 'rootroot',
     database: 'petsDB'
 })
 
@@ -14,16 +15,31 @@ module.exports = {
         console.log(req.body)
         const username = req.body.username
         const password = req.body.password
-        db.query('insert into users (username, password) values (?,?)', 
-            [username, password],
-            (err, result) => {
-                if (err) {
-                    res.status(500).send(err)
-                } else {
-                    res.json("values inserted")
-                }
+
+        let buffer = crypto.randomBytes(8).toString('hex')
+        console.log(`buffer: ${buffer}`)
+        hash = crypto.createHash('md5').update(password+buffer).digest('hex')
+        console.log(`Password hash is ${hash}`)
+        
+
+        db.connect( (err) => {
+            if (err) {
+                console.log("Error connecting, ")
+                throw err
             }
-        )
+            db.query('insert into users (username, password) values (?,?)', 
+                [username, hash],
+                (err, result) => {
+                    if (err) {
+                        console.log("Error in /create")
+                        res.status(500).send(err)
+                    } else {
+                        console.log("Values inserted")
+                        res.json("values inserted")
+                    }
+                }
+            )
+        })
     },
 
     getUsers: (req, res) => {
